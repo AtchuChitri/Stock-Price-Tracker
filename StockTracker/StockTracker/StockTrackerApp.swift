@@ -9,9 +9,11 @@ import SwiftUI
 
 @main
 struct StockTrackerApp: App {
+    @StateObject private var priceFeedService = PriceFeedService()
+
     var body: some Scene {
         WindowGroup {
-            SymbolsListView()
+            SymbolsListView(priceFeedService: priceFeedService)
         }
     }
 }

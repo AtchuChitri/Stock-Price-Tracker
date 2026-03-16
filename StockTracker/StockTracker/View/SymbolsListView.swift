@@ -8,13 +8,14 @@ import SwiftUI
 struct SymbolsListView: View {
     @StateObject private var viewModel: SymbolsListViewModel
 
-    init() {
-        _viewModel = StateObject(wrappedValue: SymbolsListViewModel())
+    init(priceFeedService: PriceFeedService) {
+        _viewModel = StateObject(wrappedValue: SymbolsListViewModel(priceFeedService: priceFeedService))
     }
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
                 connectionHeader
+                symbolsList
             }
             .navigationTitle("Stocks")
             .navigationBarTitleDisplayMode(.large)
@@ -51,10 +52,18 @@ struct SymbolsListView: View {
         }
         .buttonStyle(.plain)
     }
+    
+    private var symbolsList: some View {
+        List(viewModel.sortedSymbols) { symbol in
+            SymbolRowView(symbol: symbol)
+                .contentShape(Rectangle())
+        }
+        .listStyle(.plain)
+    }
 }
 
 // MARK: - Preview
 
 #Preview {
-    SymbolsListView()
+    SymbolsListView(priceFeedService: PriceFeedService())
 }

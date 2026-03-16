@@ -12,6 +12,24 @@ import Combine
 final class SymbolsListViewModel: ObservableObject {
     
     // MARK: - Published State
+    @Published var selectedSymbol: StockSymbol?
+    @Published var sortOption: SortOption = .price
+    
+    // MARK: - Dependencies
+    
+    let priceFeedService: PriceFeedService
+    private var cancellables = Set<AnyCancellable>()
+
+    // MARK: - Computed Properties
+    
+    var sortedSymbols: [StockSymbol] {
+        switch sortOption {
+        case .price:
+            return priceFeedService.symbols.sorted { $0.price > $1.price }
+        case .priceChange:
+            return priceFeedService.symbols.sorted { $0.priceChange > $1.priceChange }
+        }
+    }
     
     var connectionStatus: ConnectionStatus {
         return .disconnected
@@ -22,8 +40,8 @@ final class SymbolsListViewModel: ObservableObject {
     }
     
     // MARK: - Init
-    public init () {
-        
+    init(priceFeedService: PriceFeedService) {
+        self.priceFeedService = priceFeedService
     }
     
     // MARK: - Actions
@@ -49,4 +67,9 @@ enum ConnectionStatus {
         case .connected: return "Connected"
         }
     }
+}
+
+enum SortOption: String, CaseIterable {
+    case price = "Price"
+    case priceChange = "Price Change"
 }
