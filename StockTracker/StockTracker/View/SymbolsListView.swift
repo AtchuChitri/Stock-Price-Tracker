@@ -15,6 +15,7 @@ struct SymbolsListView: View {
         NavigationStack {
             VStack(spacing: 0) {
                 connectionHeader
+                sortPicker
                 symbolsList
             }
             .navigationTitle("Stocks")
@@ -59,6 +60,17 @@ struct SymbolsListView: View {
                 .contentShape(Rectangle())
         }
         .listStyle(.plain)
+    }
+
+    private var sortPicker: some View {
+        Picker("Sort by", selection: $viewModel.sortOption) {
+            ForEach(SortOption.allCases, id: \.self) { option in
+                Text(option.rawValue).tag(option)
+            }
+        }
+        .pickerStyle(.segmented)
+        .padding(.horizontal, 20)
+        .padding(.vertical, 12)
     }
 }
 
