@@ -1,38 +1,36 @@
 //
-//  SymbolsListViewModel.swift
+//  SymbolDetailViewModel.swift
 //  StockTracker
 //
-//  Created by Atchibabu Chitri on 16/03/26.
+//  Created by Atchibabu Chitri on 17/03/26.
 //
+
 import Foundation
 import Combine
 
-
 @MainActor
-final class SymbolsListViewModel: ObservableObject {
+final class SymbolDetailViewModel: ObservableObject {
+    // MARK: - Input
     
-    // MARK: - Published State
-    @Published var selectedSymbol: StockSymbol?
-    @Published var sortOption: SortOption = .price
+    let symbol: StockSymbol
     
     // MARK: - Dependencies
     
-    let priceFeedService: PriceFeedService
+    private let priceFeedService: PriceFeedService
     private var cancellables = Set<AnyCancellable>()
-
+    
     // MARK: - Computed Properties
     
-    var sortedSymbols: [StockSymbol] {
-        switch sortOption {
-        case .price:
-            return priceFeedService.symbols.sorted { $0.price > $1.price }
-        case .priceChange:
-            return priceFeedService.symbols.sorted { $0.priceChange > $1.priceChange }
-        }
+    var currentSymbol: StockSymbol {
+        priceFeedService.symbol(for: symbol.id) ?? symbol
     }
     
     var connectionStatus: ConnectionStatus {
         priceFeedService.connectionStatus
+    }
+    
+    var isFeedControlDisabled: Bool {
+        connectionStatus == .connecting
     }
     
     var isConnected: Bool {
@@ -40,7 +38,9 @@ final class SymbolsListViewModel: ObservableObject {
     }
     
     // MARK: - Init
-    init(priceFeedService: PriceFeedService) {
+    
+    init(symbol: StockSymbol, priceFeedService: PriceFeedService) {
+        self.symbol = symbol
         self.priceFeedService = priceFeedService
         setupObservers()
     }
@@ -70,26 +70,4 @@ final class SymbolsListViewModel: ObservableObject {
             priceFeedService.startPriceFeed()
         }
     }
-    func selectSymbol(_ symbol: StockSymbol) {
-        selectedSymbol = symbol
-    }
-}
-
-enum ConnectionStatus {
-    case disconnected
-    case connecting
-    case connected
-    
-    var displayText: String {
-        switch self {
-        case .disconnected: return "Disconnected"
-        case .connecting: return "Connecting..."
-        case .connected: return "Connected"
-        }
-    }
-}
-
-enum SortOption: String, CaseIterable {
-    case price = "Price"
-    case priceChange = "Price Change"
 }

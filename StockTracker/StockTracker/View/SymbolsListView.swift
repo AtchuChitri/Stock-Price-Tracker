@@ -20,6 +20,9 @@ struct SymbolsListView: View {
             }
             .navigationTitle("Stocks")
             .navigationBarTitleDisplayMode(.large)
+            .navigationDestination(item: $viewModel.selectedSymbol) { symbol in
+                SymbolDetailView(symbol: symbol, priceFeedService: viewModel.priceFeedService)
+            }
         }
     }
     private var connectionHeader: some View {
@@ -58,6 +61,9 @@ struct SymbolsListView: View {
         List(viewModel.sortedSymbols) { symbol in
             SymbolRowView(symbol: symbol)
                 .contentShape(Rectangle())
+                .onTapGesture {
+                    viewModel.selectSymbol(symbol)
+                }
         }
         .listStyle(.plain)
     }
