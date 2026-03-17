@@ -79,20 +79,6 @@ final class SymbolsListViewModel: ObservableObject {
     }
 }
 
-enum ConnectionStatus {
-    case disconnected
-    case connecting
-    case connected
-    
-    var displayText: String {
-        switch self {
-        case .disconnected: return "Disconnected"
-        case .connecting: return "Connecting..."
-        case .connected: return "Connected"
-        }
-    }
-}
-
 enum SortOption: String, CaseIterable {
     case price = "Price"
     case priceChange = "Price Change"

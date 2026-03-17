@@ -187,3 +187,17 @@ struct PriceUpdateMessage: Codable {
     let priceChange: Double
     let priceChangePercent: Double
 }
+
+enum ConnectionStatus {
+    case disconnected
+    case connecting
+    case connected
+    
+    var displayText: String {
+        switch self {
+        case .disconnected: return "Disconnected"
+        case .connecting: return "Connecting..."
+        case .connected: return "Connected"
+        }
+    }
+}
