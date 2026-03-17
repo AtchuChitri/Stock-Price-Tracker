@@ -48,6 +48,7 @@ struct SymbolDetailView: View {
             }
             .buttonStyle(.plain)
             .disabled(viewModel.isFeedControlDisabled)
+            .accessibilityIdentifier("detailFeedControlButton")
         }
         .padding()
         .frame(maxWidth: .infinity)

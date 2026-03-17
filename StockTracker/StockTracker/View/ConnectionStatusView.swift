@@ -18,6 +18,7 @@ struct ConnectionStatusView: View {
                 .font(.subheadline)
                 .foregroundColor(.secondary)
         }
+        .accessibilityIdentifier("connectionStatus")
     }
     
     private var statusColor: Color {

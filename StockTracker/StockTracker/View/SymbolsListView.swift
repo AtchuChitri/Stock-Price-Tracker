@@ -56,6 +56,7 @@ struct SymbolsListView: View {
         }
         .buttonStyle(.plain)
         .disabled(viewModel.isFeedControlDisabled)
+        .accessibilityIdentifier("feedControlButton")
     }
     
     private var symbolsList: some View {
@@ -78,6 +79,7 @@ struct SymbolsListView: View {
         .pickerStyle(.segmented)
         .padding(.horizontal, 20)
         .padding(.vertical, 12)
+        .accessibilityIdentifier("sortPicker")
     }
 }
 

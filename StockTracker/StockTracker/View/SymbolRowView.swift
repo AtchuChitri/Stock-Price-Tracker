@@ -28,5 +28,6 @@ struct SymbolRowView: View {
             }
         }
         .padding(.vertical, 8)
+        .accessibilityIdentifier("symbolRow_\(symbol.id)")
     }
 }
