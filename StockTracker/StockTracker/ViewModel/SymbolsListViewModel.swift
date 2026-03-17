@@ -32,7 +32,7 @@ final class SymbolsListViewModel: ObservableObject {
     }
     
     var connectionStatus: ConnectionStatus {
-        return .disconnected
+        priceFeedService.connectionStatus
     }
     
     var isConnected: Bool {
@@ -42,15 +42,32 @@ final class SymbolsListViewModel: ObservableObject {
     // MARK: - Init
     init(priceFeedService: PriceFeedService) {
         self.priceFeedService = priceFeedService
+        setupObservers()
+    }
+    
+    private func setupObservers() {
+        priceFeedService.$symbols
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.objectWillChange.send()
+            }
+            .store(in: &cancellables)
+        
+        priceFeedService.$connectionStatus
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.objectWillChange.send()
+            }
+            .store(in: &cancellables)
     }
     
     // MARK: - Actions
     
     func toggleFeed() {
-        if connectionStatus == .connected {
-            // stop service
+        if priceFeedService.connectionStatus == .connected {
+            priceFeedService.stopPriceFeed()
         } else {
-           // start service
+            priceFeedService.startPriceFeed()
         }
     }
 }

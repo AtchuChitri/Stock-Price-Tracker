@@ -9,7 +9,8 @@ import Foundation
 import Combine
 
 final class PriceFeedService: NSObject, ObservableObject {
-    
+    static let webSocketURL = URL(string: "wss://ws.postman-echo.com/raw")!
+
     static let defaultSymbols: [StockSymbol] = [
         StockSymbol(id: "AAPL", name: "Apple Inc.", price: 175.50, priceChange: 2.30, priceChangePercent: 1.33),
         StockSymbol(id: "GOOG", name: "Alphabet Inc.", price: 142.80, priceChange: -1.20, priceChangePercent: -0.83),
@@ -38,8 +39,151 @@ final class PriceFeedService: NSObject, ObservableObject {
         StockSymbol(id: "INTC", name: "Intel Corp.", price: 42.15, priceChange: -1.25, priceChangePercent: -2.88)
     ]
     @Published private(set) var symbols: [StockSymbol] = defaultSymbols
-
+    @Published private(set) var connectionStatus: ConnectionStatus = .disconnected
+    
+    private var webSocketTask: URLSessionWebSocketTask?
+    private var urlSession: URLSession?
+    private var priceUpdateTimer: Timer?
+    
     override init() {
         super.init()
     }
+    
+    func startPriceFeed() {
+        guard connectionStatus != .connected else { return }
+        
+        connectionStatus = .connecting
+        let config = URLSessionConfiguration.default
+        urlSession = URLSession(configuration: config, delegate: self, delegateQueue: nil)
+        webSocketTask = urlSession?.webSocketTask(with: Self.webSocketURL)
+        webSocketTask?.resume()
+    }
+    
+    func stopPriceFeed() {
+        priceUpdateTimer?.invalidate()
+        priceUpdateTimer = nil
+        webSocketTask?.cancel(with: .goingAway, reason: nil)
+        webSocketTask = nil
+        urlSession?.invalidateAndCancel()
+        urlSession = nil
+        connectionStatus = .disconnected
+    }
+    
+    private func schedulePriceUpdate() {
+        priceUpdateTimer?.invalidate()
+        priceUpdateTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] _ in
+            self?.sendRandomPriceUpdate()
+        }
+        priceUpdateTimer?.tolerance = 0.5
+        RunLoop.main.add(priceUpdateTimer!, forMode: .common)
+    }
+    
+    private func sendRandomPriceUpdate() {
+        let currentSymbols = symbols
+        guard let randomSymbol = currentSymbols.randomElement() else { return }
+        let changeAmount = Double.random(in: -5.0...5.0)
+        let newPrice = max(1.0, randomSymbol.price + changeAmount)
+        let changePercent = (changeAmount / randomSymbol.price) * 100
+        
+        let message = PriceUpdateMessage(
+            symbol: randomSymbol.id,
+            name: randomSymbol.name,
+            price: newPrice,
+            priceChange: changeAmount,
+            priceChangePercent: changePercent
+        )
+        
+        guard let jsonData = try? JSONEncoder().encode(message),
+              let jsonString = String(data: jsonData, encoding: .utf8) else { return }
+        
+        let wsMessage = URLSessionWebSocketTask.Message.string(jsonString)
+        webSocketTask?.send(wsMessage) { [weak self] error in
+            if let error = error {
+                print("WebSocket send error: \(error)")
+                DispatchQueue.main.async {
+                    self?.connectionStatus = .disconnected
+                }
+            }
+        }
+    }
+    private func receiveMessage() {
+        webSocketTask?.receive { [weak self] result in
+            switch result {
+            case .success(let message):
+                switch message {
+                case .string(let text):
+                    self?.handleReceivedMessage(text)
+                case .data(let data):
+                    if let text = String(data: data, encoding: .utf8) {
+                        self?.handleReceivedMessage(text)
+                    }
+                @unknown default:
+                    break
+                }
+                self?.receiveMessage()
+            case .failure(let error):
+                print("WebSocket receive error: \(error)")
+                DispatchQueue.main.async {
+                    self?.connectionStatus = .disconnected
+                }
+            }
+        }
+    }
+    
+    private func handleReceivedMessage(_ text: String) {
+        guard let data = text.data(using: .utf8),
+              let message = try? JSONDecoder().decode(PriceUpdateMessage.self, from: data) else { return }
+        
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            if let index = self.symbols.firstIndex(where: { $0.id == message.symbol }) {
+                self.symbols[index] = StockSymbol(
+                    id: message.symbol,
+                    name: message.name,
+                    price: message.price,
+                    priceChange: message.priceChange,
+                    priceChangePercent: message.priceChangePercent
+                )
+            }
+        }
+    }
+    
+    func symbol(for id: String) -> StockSymbol? {
+        symbols.first { $0.id == id }
+    }
+}
+extension PriceFeedService: URLSessionWebSocketDelegate {
+    func urlSession(_ session: URLSession, webSocketTask: URLSessionWebSocketTask, didOpenWithProtocol protocol: String?) {
+        DispatchQueue.main.async { [weak self] in
+            self?.connectionStatus = .connected
+            self?.schedulePriceUpdate()
+        }
+        receiveMessage()
+    }
+    
+    func urlSession(_ session: URLSession, webSocketTask: URLSessionWebSocketTask, didCloseWith closeCode: URLSessionWebSocketTask.CloseCode, reason: Data?) {
+        DispatchQueue.main.async { [weak self] in
+            self?.connectionStatus = .disconnected
+            self?.priceUpdateTimer?.invalidate()
+            self?.priceUpdateTimer = nil
+        }
+    }
+    
+    func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
+        if error != nil {
+            DispatchQueue.main.async { [weak self] in
+                self?.connectionStatus = .disconnected
+                self?.priceUpdateTimer?.invalidate()
+                self?.priceUpdateTimer = nil
+            }
+        }
+    }
+}
+
+struct PriceUpdateMessage: Codable {
+    let symbol: String
+    let name: String
+    let price: Double
+    let priceChange: Double
+    let priceChangePercent: Double
 }
