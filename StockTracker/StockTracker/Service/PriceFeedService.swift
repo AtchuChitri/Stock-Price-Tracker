@@ -8,7 +8,21 @@
 import Foundation
 import Combine
 
-final class PriceFeedService: NSObject, ObservableObject {
+// MARK: - Protocol
+
+protocol PriceFeedServiceProtocol: ObservableObject {
+    var symbols: [StockSymbol] { get }
+    var connectionStatus: ConnectionStatus { get }
+    var symbolsPublisher: AnyPublisher<[StockSymbol], Never> { get }
+    var connectionStatusPublisher: AnyPublisher<ConnectionStatus, Never> { get }
+    func startPriceFeed()
+    func stopPriceFeed()
+    func symbol(for id: String) -> StockSymbol?
+}
+
+// MARK: - Implementation
+
+final class PriceFeedService: NSObject, ObservableObject, PriceFeedServiceProtocol {
     static let webSocketURL = URL(string: "wss://ws.postman-echo.com/raw")!
 
     static let defaultSymbols: [StockSymbol] = [
@@ -151,7 +165,16 @@ final class PriceFeedService: NSObject, ObservableObject {
     func symbol(for id: String) -> StockSymbol? {
         symbols.first { $0.id == id }
     }
+    
+    var symbolsPublisher: AnyPublisher<[StockSymbol], Never> {
+        $symbols.eraseToAnyPublisher()
+    }
+    
+    var connectionStatusPublisher: AnyPublisher<ConnectionStatus, Never> {
+        $connectionStatus.eraseToAnyPublisher()
+    }
 }
+
 extension PriceFeedService: URLSessionWebSocketDelegate {
     func urlSession(_ session: URLSession, webSocketTask: URLSessionWebSocketTask, didOpenWithProtocol protocol: String?) {
         DispatchQueue.main.async { [weak self] in

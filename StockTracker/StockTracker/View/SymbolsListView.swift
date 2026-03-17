@@ -8,7 +8,7 @@ import SwiftUI
 struct SymbolsListView: View {
     @StateObject private var viewModel: SymbolsListViewModel
 
-    init(priceFeedService: PriceFeedService) {
+    init(priceFeedService: any PriceFeedServiceProtocol) {
         _viewModel = StateObject(wrappedValue: SymbolsListViewModel(priceFeedService: priceFeedService))
     }
     var body: some View {

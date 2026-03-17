@@ -11,7 +11,7 @@ struct SymbolDetailView: View {
     let symbol: StockSymbol
     @StateObject private var viewModel: SymbolDetailViewModel
     
-    init(symbol: StockSymbol, priceFeedService: PriceFeedService) {
+    init(symbol: StockSymbol, priceFeedService: any PriceFeedServiceProtocol) {
         self.symbol = symbol
         _viewModel = StateObject(wrappedValue: SymbolDetailViewModel(symbol: symbol, priceFeedService: priceFeedService))
     }

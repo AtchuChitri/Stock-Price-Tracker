@@ -17,7 +17,7 @@ final class SymbolsListViewModel: ObservableObject {
     
     // MARK: - Dependencies
     
-    let priceFeedService: PriceFeedService
+    let priceFeedService: any PriceFeedServiceProtocol
     private var cancellables = Set<AnyCancellable>()
 
     // MARK: - Computed Properties
@@ -44,20 +44,20 @@ final class SymbolsListViewModel: ObservableObject {
     }
     
     // MARK: - Init
-    init(priceFeedService: PriceFeedService) {
+    init(priceFeedService: any PriceFeedServiceProtocol) {
         self.priceFeedService = priceFeedService
         setupObservers()
     }
     
     private func setupObservers() {
-        priceFeedService.$symbols
+        priceFeedService.symbolsPublisher
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
                 self?.objectWillChange.send()
             }
             .store(in: &cancellables)
         
-        priceFeedService.$connectionStatus
+        priceFeedService.connectionStatusPublisher
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
                 self?.objectWillChange.send()
