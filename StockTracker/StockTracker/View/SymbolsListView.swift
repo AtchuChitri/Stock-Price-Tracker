@@ -55,6 +55,7 @@ struct SymbolsListView: View {
             .clipShape(Capsule())
         }
         .buttonStyle(.plain)
+        .disabled(viewModel.isFeedControlDisabled)
     }
     
     private var symbolsList: some View {

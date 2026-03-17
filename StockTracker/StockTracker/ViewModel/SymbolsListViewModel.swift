@@ -39,6 +39,10 @@ final class SymbolsListViewModel: ObservableObject {
         connectionStatus == .connected
     }
     
+    var isFeedControlDisabled: Bool {
+        connectionStatus == .connecting
+    }
+    
     // MARK: - Init
     init(priceFeedService: PriceFeedService) {
         self.priceFeedService = priceFeedService
